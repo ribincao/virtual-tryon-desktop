@@ -51,9 +51,21 @@ Decart bills realtime by **active generation time**, not wall clock.
 | `lucy-vton` realtime | **$0.02 / sec** = $1.20 / min |
 | Free credits on signup | 1000 credits = $10 ≈ 8 minutes |
 
-Two connect-and-stream tests totalling ~21 s of wall clock billed **22 credits ($0.22)**, not the $0.42 that wall clock implies. Connection setup is not billed; only generation is.
+### Wall clock is roughly 2× the real bill
 
-The app's cost meter starts on the `connected` signal, so it still runs slightly ahead of what Decart actually charges. That error is deliberate — over-reporting trips the spend cap early rather than late.
+Three test sessions, wall clock vs what Decart actually charged:
+
+| Session | Wall clock | Implied at $0.02/s | Actually billed |
+|---|---|---|---|
+| 1 — connect check | 6 s | $0.12 | — |
+| 2 — 12 s stream | 15 s | $0.30 | — |
+| 1 + 2 combined | 21 s | $0.42 | **22 credits ($0.22)** |
+| 3 — image-only path | 9 s | $0.19 | **10 credits ($0.10)** |
+| **Total** | | **$0.61** | **32 credits ($0.32)** |
+
+Two things account for the gap: the 2.7–3.8 s connection handshake isn't billed, and return frames arrive at ~17 fps against a nominal 30, so a second of wall clock is less than a second of generated video.
+
+**The app's cost meter inherits this bias.** It starts on the `connected` signal (so it excludes the handshake) but still counts wall clock, so expect it to read high — plan for roughly half. The bias is deliberate and kept: over-reporting trips `max_session_cost_usd` early rather than late. Treat the meter as a ceiling, not an invoice.
 
 Leaving a session open is the expensive failure mode, so the app has two guards, both configurable:
 
