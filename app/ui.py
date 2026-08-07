@@ -35,9 +35,12 @@ PROMPT_HINT = (
 )
 
 
-def to_pixmap(rgb: np.ndarray, mirror: bool) -> QPixmap:
-    if mirror:
-        rgb = np.ascontiguousarray(rgb[:, ::-1])
+def to_pixmap(rgb: np.ndarray) -> QPixmap:
+    """Frames arrive display-ready; mirroring happens at capture, not here.
+
+    Flipping at display would also flip the provenance watermark Decart burns
+    into the returned frames.
+    """
     height, width, _ = rgb.shape
     image = QImage(rgb.data, width, height, 3 * width, QImage.Format.Format_RGB888)
     return QPixmap.fromImage(image.copy())
@@ -55,8 +58,8 @@ class VideoView(QLabel):
         self.setText("Starting camera…")
         self._pixmap: QPixmap | None = None
 
-    def show_frame(self, rgb: np.ndarray, mirror: bool) -> None:
-        self._pixmap = to_pixmap(rgb, mirror)
+    def show_frame(self, rgb: np.ndarray) -> None:
+        self._pixmap = to_pixmap(rgb)
         self._rescale()
 
     def clear_frame(self, message: str) -> None:
@@ -110,6 +113,8 @@ class MainWindow(QWidget):
         )
         self.camera.frame_ready.connect(self._on_camera_frame)
         self.camera.failed.connect(self._on_camera_failed)
+        self.camera.set_mirror(self.mirror_check.isChecked())
+        self.mirror_check.toggled.connect(self.camera.set_mirror)
         self.camera.start()
 
         self._meter = QTimer(self)
@@ -322,14 +327,14 @@ class MainWindow(QWidget):
 
     def _on_remote_frame(self, rgb: np.ndarray) -> None:
         if self._connected:
-            self.video.show_frame(rgb, self.mirror_check.isChecked())
+            self.video.show_frame(rgb)
 
     def _on_camera_frame(self, rgb: np.ndarray) -> None:
         if self._connected:
             self.session.submit_frame(rgb)
         else:
             # Free local preview, so you can frame yourself before paying.
-            self.video.show_frame(rgb, self.mirror_check.isChecked())
+            self.video.show_frame(rgb)
 
     def _on_camera_failed(self, message: str) -> None:
         self.video.clear_frame("Camera unavailable")

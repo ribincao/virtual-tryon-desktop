@@ -44,6 +44,17 @@ class CameraThread(QThread):
         self._height = height
         self._fps = max(1, fps)
         self._running = False
+        self._mirror = True
+
+    def set_mirror(self, enabled: bool) -> None:
+        """Mirror at capture, not at display.
+
+        Flipping the returned frames instead would also flip the provenance
+        watermark Decart burns into them, leaving it printed backwards.
+        Mirroring the input keeps the output mirror-like and the watermark
+        the right way round.
+        """
+        self._mirror = enabled
 
     def run(self) -> None:
         cap = cv2.VideoCapture(self._device_index)
@@ -75,6 +86,8 @@ class CameraThread(QThread):
                 rgb = cv2.cvtColor(
                     fit_to(bgr, self._width, self._height), cv2.COLOR_BGR2RGB
                 )
+                if self._mirror:
+                    rgb = np.ascontiguousarray(rgb[:, ::-1])
                 self.frame_ready.emit(rgb)
 
                 elapsed = time.perf_counter() - started
