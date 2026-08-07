@@ -31,6 +31,8 @@ Verified against the live API on 2026-08-07 (Apple M2, 16 GB):
 
 The first remote frame arrives black. That's stream startup, not a bug.
 
+**Realtime output carries an AI-generated watermark.** The mark on your output is expected, not a rendering fault. Decart's dashboard offers an application process to have it removed; the Acceptable Use Policy forbids stripping or circumventing it yourself.
+
 ## Stack
 
 | Piece | Choice |
@@ -47,6 +49,11 @@ Decart bills realtime by **active generation time**, not wall clock.
 | | Rate |
 |---|---|
 | `lucy-vton` realtime | **$0.02 / sec** = $1.20 / min |
+| Free credits on signup | 1000 credits = $10 ≈ 8 minutes |
+
+Two connect-and-stream tests totalling ~21 s of wall clock billed **22 credits ($0.22)**, not the $0.42 that wall clock implies. Connection setup is not billed; only generation is.
+
+The app's cost meter starts on the `connected` signal, so it still runs slightly ahead of what Decart actually charges. That error is deliberate — over-reporting trips the spend cap early rather than late.
 
 Leaving a session open is the expensive failure mode, so the app has two guards, both configurable:
 
