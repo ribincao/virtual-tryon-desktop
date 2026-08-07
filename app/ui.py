@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import sys
 import time
 
 import numpy as np
@@ -33,6 +34,12 @@ PROMPT_HINT = (
     "Prompts work best starting with <b>Substitute</b> or <b>Add</b>. "
     "A garment image plus a short description beats either alone."
 )
+
+# How long an error stays on the status bar before normal updates resume.
+ERROR_DISPLAY_SEC = 8.0
+
+# States where the session is billing but can no longer be driven.
+DEAD_STATES = {"disconnected", "reconnecting"}
 
 
 def to_pixmap(rgb: np.ndarray) -> QPixmap:
@@ -115,6 +122,8 @@ class MainWindow(QWidget):
         self._connected = False
         self._started_at: float | None = None
         self._last_interaction = time.monotonic()
+        self._error_text = ""
+        self._error_until = 0.0
 
         self._build_ui(model)
         self._wire()
@@ -358,9 +367,22 @@ class MainWindow(QWidget):
         QMessageBox.critical(self, "Camera", message)
 
     def _on_error(self, message: str) -> None:
-        QMessageBox.warning(self, "Try-on", message)
+        """Show session errors inline, never in a modal.
+
+        A modal blocks on a click while the session keeps generating, so an
+        error dialog left on screen bills at $0.02/sec until someone notices
+        it. The status bar costs nothing to leave up.
+        """
+        print(f"[try-on] {message}", file=sys.stderr)
+        self._error_text = message
+        self._error_until = time.monotonic() + ERROR_DISPLAY_SEC
+        self.status_label.setText(message)
+        self.status_label.setStyleSheet("color:#e06c5a;")
 
     def _set_status(self, text: str) -> None:
+        if time.monotonic() < self._error_until:
+            return  # don't paper over an error the user hasn't had time to read
+        self.status_label.setStyleSheet("color:#888;")
         self.status_label.setText(text)
 
     # ------------------------------------------------------------------
@@ -378,6 +400,15 @@ class MainWindow(QWidget):
             return
 
         self.cost_label.setText(self._cost_text())
+
+        # The control channel can drop while video keeps arriving, leaving a
+        # session that looks Live, refuses every command, and bills the whole
+        # time. Frames alone don't prove the session is healthy.
+        state = self.session.connection_state()
+        if state in DEAD_STATES:
+            self.session.stop()
+            self._on_error(f"Session ended by the server ({state}) · {self._cost_text()}")
+            return
 
         cap = self.config.max_session_cost_usd
         if cap > 0 and self._elapsed() * PRICE_PER_SEC_USD >= cap:

@@ -129,6 +129,8 @@ The SDK is asyncio and Qt is not, so `realtime.py` owns a private event loop on 
 - **Frame format**: LiveKit wants RGB24, OpenCV gives BGR. Miss the conversion and everything is blue.
 - **Aspect ratio**: the model frame is ~1.74:1, a webcam is usually 16:9. `camera.fit_to()` center-crops before resizing so you aren't judging a squashed version of yourself.
 - **Buffer reuse**: remote frames must be `.copy()`d out of the LiveKit buffer or they get overwritten mid-render.
+- **Garment image size**: the SDK base64-encodes the file and pushes it down the control WebSocket with no resizing and no ceiling. A wallpaper-sized image can take the control channel down, which surfaces as `Control channel disconnected` on a session that still looks live and still bills. `app/garment.py` caps the long edge at 1024px and re-encodes as JPEG first.
+- **A live-looking session can be dead**: video keeps arriving after the control channel drops, so the UI polls `get_connection_state()` rather than trusting frames.
 
 ## License
 

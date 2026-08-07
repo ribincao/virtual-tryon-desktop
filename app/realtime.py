@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import asyncio
 import threading
-from pathlib import Path
 
 import numpy as np
 from livekit import rtc
@@ -19,6 +18,7 @@ from PySide6.QtCore import QObject, Signal
 from decart import ModelState, Prompt, models
 from decart.realtime import RealtimeClient, RealtimeConnectOptions
 
+from . import garment
 from .config import REALTIME_BASE_URL
 
 
@@ -172,12 +172,29 @@ class RealtimeSession(QObject):
             return
         try:
             if image_path:
-                await client.set_image(
-                    Path(image_path), prompt=prompt or None, enhance=False
-                )
-                self.note.emit("Garment applied")
+                # Shrink before sending; an oversized payload can take the
+                # control channel down mid-session.
+                data, note = garment.prepare(image_path)
+                await client.set_image(data, prompt=prompt or None, enhance=False)
+                self.note.emit(f"Garment applied ({note})")
             elif prompt:
                 await client.set_prompt(prompt, enhance=False)
                 self.note.emit("Prompt applied")
+        except garment.GarmentError as exc:
+            self.error.emit(str(exc))
         except Exception as exc:
             self.error.emit(f"Could not apply outfit: {exc}")
+
+    def connection_state(self) -> str | None:
+        """Current SDK-reported state, or None when there's no session.
+
+        The control channel can die while the video track keeps flowing, so
+        the UI can't infer liveness from frames alone.
+        """
+        client = self._client
+        if client is None:
+            return None
+        try:
+            return client.get_connection_state()
+        except Exception:
+            return None
