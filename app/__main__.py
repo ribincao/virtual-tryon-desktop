@@ -3,11 +3,27 @@
 from __future__ import annotations
 
 import sys
+import traceback
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
 from .config import ConfigError, load
 from .ui import MainWindow
+
+
+def _install_excepthook() -> None:
+    """Make crashes legible.
+
+    PySide6 aborts the process on an unhandled exception inside a slot and
+    prints nothing useful, so a bug in a signal handler just looks like the
+    window vanishing. Print the traceback and keep running instead.
+    """
+
+    def hook(exc_type, exc, tb):
+        traceback.print_exception(exc_type, exc, tb)
+        sys.stderr.flush()
+
+    sys.excepthook = hook
 
 STYLESHEET = """
 QWidget { background:#141414; color:#ddd;
@@ -23,6 +39,7 @@ QCheckBox { color:#999; }
 
 
 def main() -> int:
+    _install_excepthook()
     app = QApplication(sys.argv)
     app.setApplicationName("Virtual Try-On")
     app.setStyleSheet(STYLESHEET)

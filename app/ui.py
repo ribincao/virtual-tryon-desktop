@@ -99,6 +99,12 @@ class MainWindow(QWidget):
         self._build_ui(model)
         self._wire()
 
+        # Without this, the buttons keep Qt's default enabled state until the
+        # user happens to touch an input — which means Connect is clickable at
+        # launch with no garment and no prompt, opening a billed session that
+        # can't apply anything.
+        self._refresh_buttons()
+
         self.camera = CameraThread(
             config.device_index, model.width, model.height, model.fps
         )
