@@ -80,20 +80,28 @@ The status bar shows a live timer and running cost, and warns during the last 15
 ## Setup
 
 ```bash
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
 cp config.example.toml config.local.toml
 ```
 
-Add your API key to `config.local.toml`. Get one at [platform.decart.ai](https://platform.decart.ai); new accounts come with free credits.
+Add your API key to it. Get one at [platform.decart.ai](https://platform.decart.ai); new accounts come with free credits. The file is gitignored — do not commit your key.
 
-`config.local.toml` is gitignored. Do not commit your key.
+That's the only manual step; `make run` builds the venv and installs dependencies on first use.
 
 ## Run
 
 ```bash
-python run.py
+make run
 ```
+
+| Target | What it does |
+|---|---|
+| `make run` | Launch the app (creates the venv on first run) |
+| `make camera` | Check the webcam without connecting to Decart — free |
+| `make check` | Offline smoke test: config, model, frame pipeline — free |
+| `make deps` | Reinstall dependencies |
+| `make clean` | Remove the venv and caches, keeping `config.local.toml` |
+
+Run it from a terminal, not from a bundled app: macOS grants camera permission to the launching process.
 
 1. **Upload garment image** — any product photo, PNG/JPG/WebP
 2. **Describe it** — prompts work best starting with `Substitute` or `Add`, e.g. *"Substitute the current top with a navy blue wool blazer over a white shirt"*
