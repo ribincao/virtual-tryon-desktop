@@ -1,0 +1,18 @@
+# Copy to config.local.toml and fill in. config.local.toml is gitignored.
+
+[decart]
+# https://platform.decart.ai — new accounts get free credits
+api_key = "sk-..."
+model = "lucy-vton-latest"
+
+[session]
+# Hard stop after this many seconds with no interaction.
+# Realtime bills $0.02/sec of active generation; an idle open session still costs.
+idle_timeout_sec = 60
+
+# Refuse to start a session if projected spend would exceed this. 0 disables.
+max_session_cost_usd = 2.00
+
+[camera]
+# Index passed to cv2.VideoCapture. 0 is the built-in FaceTime camera on most Macs.
+device_index = 0

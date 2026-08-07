@@ -1,0 +1,21 @@
+# Secrets — never commit
+config.local.toml
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Captures / scratch output
+out/
+*.mp4
+*.png
+*.jpg
+!docs/**/*.png
+
+# macOS
+.DS_Store
