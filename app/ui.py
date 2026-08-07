@@ -5,7 +5,7 @@ from __future__ import annotations
 import time
 
 import numpy as np
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtWidgets import (
     QCheckBox,
@@ -71,15 +71,32 @@ class VideoView(QLabel):
         self._rescale()
 
     def _rescale(self) -> None:
+        """Scale against *device* pixels, not logical points.
+
+        QWidget.size() is in points. On a 2x display, scaling a 1088px frame
+        to a ~670pt widget shrank it to 670 real pixels, and Qt then drew
+        that across 1340 device pixels: a downscale immediately followed by
+        an upscale, discarding roughly half the detail the model produced
+        before it ever reached the screen.
+
+        Targeting device pixels resamples once instead of twice. The frame
+        keeps the same physical size on screen; it just stops being blurred
+        on the way there.
+        """
         if self._pixmap is None:
             return
-        self.setPixmap(
-            self._pixmap.scaled(
-                self.size(),
-                Qt.AspectRatioMode.KeepAspectRatio,
-                Qt.TransformationMode.SmoothTransformation,
-            )
+
+        ratio = self.devicePixelRatioF()
+        available = QSize(
+            max(1, int(self.width() * ratio)), max(1, int(self.height() * ratio))
         )
+        scaled = self._pixmap.scaled(
+            available,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        scaled.setDevicePixelRatio(ratio)
+        self.setPixmap(scaled)
 
 
 class MainWindow(QWidget):
