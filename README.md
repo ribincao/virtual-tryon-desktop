@@ -6,6 +6,10 @@ Built on [Decart's](https://platform.decart.ai) `lucy-vton` realtime model via t
 
 > Personal tool. Not affiliated with or endorsed by Decart.AI, Inc.
 
+## How it started
+
+I came across Decart's Anywear Chrome extension, which dresses you in clothes live on a web page, traced it back to the realtime model behind it, and built this desktop version in an afternoon for $0.56. The full story, including the four bugs that all cost money, is on my blog (in Chinese): [Decart 换装插件 Anywear，我花 $0.56 做了个桌面版](https://caolibin.com/articles/from-chrome-extension-to-desktop-app/).
+
 ## How it works
 
 The model is not local. Camera frames stream over WebRTC to Decart's GPUs, get transformed frame by frame, and stream back.
